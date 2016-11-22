@@ -3,7 +3,10 @@
     "version": "0.0.1",
     "dependencies": {
       "express": "*",
+      "mongoose": "*",
       "mongodb": "latest",
+      "express": "latest",
+      "express-fileupload": "latest",
       "ejs": "*",
 		  "body-parser": "*",
 		  "cookie-session": "*"

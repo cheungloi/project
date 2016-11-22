@@ -1,0 +1,14 @@
+<html>
+    <head> 
+        <title>Restaurant List</title>
+    </head>
+    <body>
+    	Hello <%= u %><br>
+		Restaurant List<br>
+		<a href=/add><button>ADD</button></a><br>
+		<% r.forEach(function(restaurants) { %>
+  		<li><a href=/showinfo?id=<%= restaurants._id %>><%= restaurants.name %></a></li>
+  		<% });                        %>
+		<ol>
+    </body>
+</html>

@@ -1,0 +1,31 @@
+<html>
+    <head> 
+        <title>Restaurant information</title>
+    </head>
+    <body>
+    	Restaurant information<br>
+    	Name: <%= r.name%><br>
+    	<img src="data:<%=r.mimetype%>;base64,<%=r.data%>" border="1"><br>
+    	Borough: <%= r.borough%><br>
+    	Cuisine: <%= r.cuisine%><br>
+    	Street: <%= r.address.street%><br>
+    	Building: <%= r.address.building%><br>
+    	Zipcode: <%= r.address.zipcode%><br>
+
+    	<a href="/showmap?name=<%= r.name%>&lat=<%=r.address.gps[0]%>&lon=<%= r.address.gps[1] %>">
+    		GPS:</a> <%= r.address.gps[0] %>, <%= r.address.gps[1] %>
+    	
+        <br>
+    	Create by: <%= r.owner%><br>
+        Rate:<br>  
+        <% for(var i=0; i<r.rate.length; i++){%>
+        <%= r.rate[i].mark%> <%= r.rate[i].name%><br>
+        <%}%>
+        <a href='/index'><button>HOME</button></a>
+        <a href='/changeinfo?id=<%= r._id%>'><button>Edit</button></a>
+        <a href='/rate?id=<%= r._id%>&name=<%= r.name%>'><button>Rate</button></a>
+        <a href='/delete?id=<%= r._id%>&owner=<%= r.owner%>'><button>Del</button></a>
+
+
+    </body>
+</html>

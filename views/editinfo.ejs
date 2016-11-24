@@ -1,0 +1,22 @@
+<html>
+    <head> 
+        <title>Change information</title>
+    </head>
+    <body>
+    	Restaurant information<br>
+        <form action='/changeinfo' method='post' encType='multipart/form-data'>
+    	Name: <input type='text' name='name' value=<%= r.name%>><br>
+        <input type='hidden' name='id' value=<%= r._id %>>
+    	Borough: <input type='text' name='borough' value=<%= r.borough%>><br>
+    	Cuisine: <input type='text' name='cuisine' value=<%= r.cuisine%>><br>
+    	Street: <input type='text' name='street' value=<%= r.address.street%>><br>
+    	Building: <input type='text' name='building' value=<%= r.address.building%>><br>
+    	Zipcode: <input type='text' name='zipcode' value=<%= r.address.zipcode%>><br>
+        GPS lat: <input type='text' name='lat' value=<%=r.address.gps[0] %>><br> 
+        GPS lon: <input type='text' name='lon' value=<%= r.address.gps[1] %>><br>
+        Photo: <input type='file' name='rphoto'><br>
+        <br>
+        <input type='submit' value='Change' />
+        </form>
+    </body>
+</html>

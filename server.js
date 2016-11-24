@@ -43,20 +43,106 @@ app.get('/login',function(req,res) {
 app.get('/create',function(req,res) {
 	res.sendFile(__dirname + '/public/create.html');
 });
+app.get('/rate', function(req, res){
+	var id = req.query.id;
+	var name = req.query.name;
+	res.render("rate.ejs", {id:id,name:name});
+});
+app.get('/showinfo',function(req,res) {
+	MongoClient.connect(mongourl, function(err, db){
+		assert.equal(err, null);
+		var criteria = {"_id":ObjectId(req.query.id)};
+		findrestaurant(db, criteria, function(restaurants){
+			db.close();
+			console.log(restaurants);
+			res.render('info',{r:restaurants});
+			//res.end();
+		});
+	});
+});
 
 app.get('/index',function(req,res) {
 	if (!req.session.authenticated) {
 		res.redirect('/login');
 	}else{
-		MongoClient.connect(mongourl, function(err,db){
+		MongoClient.connect(mongourl, function(err, db){
 			assert.equal(err, null);
 			console.log('connecting to restaurants');
 			listrestaurant(db, function(restaurants){
 				db.close();
 				res.render('index',{r:restaurants, u:req.session.username});
+				//res.end();
 			});
 		});
 	}
+});
+
+app.get('/delete', function(req,res){
+	if(req.query.owner !== req.session.username){
+        res.send('You are not owner.');
+        return;
+    }
+    var criteria = {"_id":ObjectId(req.query.id)};
+    MongoClient.connect(mongourl, function(err, db){
+    	assert.equal(err,null);
+    	delrestaurant(db, criteria, function(result){
+    		db.close();
+    		res.redirect('/index');
+    	});
+    });
+});
+
+app.get('/changeinfo', function(req, res){
+	MongoClient.connect(mongourl, function(err, db){
+		assert.equal(err, null);
+		var criteria = {"_id":ObjectId(req.query.id)};
+		findrestaurant(db, criteria, function(restaurants){
+			db.close();
+			console.log(restaurants);
+			if(restaurants.owner !== req.session.username){
+				var error = "You are not authorized to edit!!!";
+				res.render('error',{error:error});
+				//res.send('You are not authorized to edit!!!');	
+			}else{
+				res.render('editinfo',{r:restaurants});
+			}	
+		});
+	});
+});
+app.get('/showmap', function(req,res){
+	var lat = req.query.lat;
+	var lon = req.query.lon;
+	var zoom = 18;
+	var name = req.query.name;
+	res.render("gmap.ejs",{lat:lat,lon:lon,zoom:zoom,name:name});
+	res.end();
+});
+
+app.get('/ratemark', function(req,res){
+	var criteria1 = {"_id":ObjectId(req.query.id)};
+	var criteria2 = {"rate":{"name":req.session.username, "mark":req.query.rate}};
+	var criteria3 = {$push:criteria2};
+	console.log(criteria3);
+	MongoClient.connect(mongourl,function(err,db) {
+      console.log('Connected to mlab.com');
+      assert.equal(null,err);
+      checkrate(db, criteria1, req.session.username, function(result){
+      	db.close();
+      	if(result == 'a'){
+      		MongoClient.connect(mongourl,function(err,db) {
+      		console.log('Connected to mlab.com');
+      		assert.equal(null,err);
+      			updaterestaurant(db, criteria1, criteria3, function(result){
+    			db.close();
+    			res.redirect('/showinfo?id='+req.query.id);
+    			});
+    		});
+    	}else{
+    		var error = "You have gave rate";
+			res.render('error',{error:error});
+    	}  	
+	  });
+	});
 });
 
 app.post('/addrestaurant', function(req, res){
@@ -86,7 +172,35 @@ app.post('/addrestaurant', function(req, res){
     	});
 	});
 });
-
+app.post('/changeinfo', function(req,res){
+	//console.log(req.files.rphoto.name);
+	var criteria1 = {"_id":ObjectId(req.body.id)};
+	var criteria2 = {};
+	criteria2['name'] = req.body.name;
+	criteria2['borough'] = req.body.borough;
+	criteria2['cuisine'] = req.body.cuisine;
+	criteria2['address'] = {};
+	criteria2.address.street = req.body.street;
+	criteria2.address.building = req.body.building;
+	criteria2.address.zipcode = req.body.zipcode;
+	criteria2.address['gps'] = [];
+	criteria2.address.gps.push(req.body.lat);
+	criteria2.address.gps.push(req.body.lon);
+	if(req.files.rphoto.name){
+		criteria2['data'] = new Buffer(req.files.rphoto.data).toString('base64');
+		criteria2['mimetype'] = req.files.rphoto.mimetype;	
+	}
+	var criteria3 = {$set:criteria2};
+	//console.log(criteria3);
+	MongoClient.connect(mongourl,function(err,db) {
+      console.log('Connected to mlab.com');
+      assert.equal(null,err);
+      updaterestaurant(db, criteria1, criteria3, function(result){
+    		db.close();
+    		res.redirect('/showinfo?id='+req.body.id);
+    	});
+	});
+});
 
 app.post('/login',function(req,res) {
 	if(req.body.id == null || req.body.pw == null){
@@ -125,7 +239,8 @@ app.post('/create', function(req,res){
 			db.close();
         if (result.insertedId != null) {
           res.status(200);
-          res.end('Inserted: ' + result.insertedId)
+          res.send('create success');
+          //res.redirect('/login');
         } else {
           res.status(500);
           res.end(JSON.stringify(result));
@@ -141,6 +256,12 @@ app.get('/logout',function(req,res) {
 
 function listrestaurant(db, callback){
 	db.collection('restaurants').find().toArray(function(err, result){
+		assert.equal(err,null);
+		callback(result);
+	});
+}
+function findrestaurant(db, criteria, callback){
+	db.collection('restaurants').findOne(criteria, function(err, result){
 		assert.equal(err,null);
 		callback(result);
 	});
@@ -183,7 +304,19 @@ function createac(db, id, pw, callback){
 		}
 	});
 }
-
+function updaterestaurant(db, criteria1, criteria2, callback){
+	console.log(criteria1);
+	console.log(criteria2);
+	db.collection('restaurants').updateOne(criteria1, criteria2, function(err,result){
+		if (err) {
+      			result = err;
+      			console.log("updateOne error: " + JSON.stringify(err));
+    		} else {
+      			console.log("update success");
+    		}
+    		callback(result);
+	});
+}
 function createrestaurant(db, bfile, body, owner, callback){
 	var r = {};
 	r['name'] = body.rname;
@@ -194,10 +327,10 @@ function createrestaurant(db, bfile, body, owner, callback){
 	r.address.building = body.building;
 	r.address.zipcode = body.zipcode;
 	r.address['gps'] = [];
-	r.address.gps.push(body.lon);
 	r.address.gps.push(body.lat);
+	r.address.gps.push(body.lon);
 	r['owner'] = owner;
-	r['rate'] = 0;
+	r['rate'] = [];
 	r['data'] = new Buffer(bfile.data).toString('base64');
 	r['mimetype'] = bfile.mimetype;
 	console.log(r);
@@ -211,4 +344,33 @@ function createrestaurant(db, bfile, body, owner, callback){
     		callback(result);
     		});
 }
+
+function checkrate(db, criteria, user, callback){
+	console.log(user);
+	var result = 'a';
+
+	db.collection('restaurants').findOne(criteria, function(err, doc){
+		assert.equal(err,null);
+		console.log(doc.rate);
+		if(doc.rate !== null){
+			console.log("rate is not null");
+			for(var i=0;i<doc.rate.length;i++){
+				if (doc.rate[i].name == user){
+				result = 'b';
+				//callback(result);
+				}
+			}
+		}else{
+		console.log("rate is null");
+	}
+		callback(result);
+	});
+}
+function delrestaurant(db, criteria, callback){
+	db.collection('restaurants').remove(criteria,function(err,result) {
+	console.log("delete success");
+	callback(result);
+	});
+}
+
 app.listen(process.env.PORT || 8099);

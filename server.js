@@ -68,13 +68,26 @@ app.get('/index',function(req,res) {
 		MongoClient.connect(mongourl, function(err, db){
 			assert.equal(err, null);
 			console.log('connecting to restaurants');
-			listrestaurant(db, function(restaurants){
+			var criteria = null;
+			listrestaurant(db, criteria, function(restaurants){
 				db.close();
 				res.render('index',{r:restaurants, u:req.session.username});
 				//res.end();
 			});
 		});
 	}
+});
+app.get('/search', function(req,res){
+	var criteria = req.query.keyword;	
+	MongoClient.connect(mongourl, criteria, function(err, db){
+		assert.equal(err, null);
+		console.log('connecting to restaurants');
+		listrestaurant(db, criteria, function(restaurants){
+			db.close();
+			res.render('index',{r:restaurants, u:req.session.username});
+		//req.end();
+		});
+	});
 });
 
 app.get('/delete', function(req,res){
@@ -254,11 +267,19 @@ app.get('/logout',function(req,res) {
 	res.redirect('/');
 });
 
-function listrestaurant(db, callback){
-	db.collection('restaurants').find().toArray(function(err, result){
-		assert.equal(err,null);
-		callback(result);
+function listrestaurant(db, criteria, callback){
+	if (!criteria){
+		db.collection('restaurants').find().toArray(function(err, result){
+			assert.equal(err,null);
+			callback(result);
 	});
+	}else{
+		var keyword = '\.*'+criteria+'\.*';
+		db.collection('restaurants').find({name:new RegExp(keyword, 'i')}).toArray(function(err, result){
+			assert.equal(err,null);
+			callback(result);
+	});
+}
 }
 function findrestaurant(db, criteria, callback){
 	db.collection('restaurants').findOne(criteria, function(err, result){

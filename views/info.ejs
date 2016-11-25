@@ -18,9 +18,11 @@
         <br>
     	Create by: <%= r.owner%><br>
         Rate:<br>  
+        <ol>
         <% for(var i=0; i<r.rate.length; i++){%>
-        <%= r.rate[i].mark%> <%= r.rate[i].name%><br>
+        <li><%= r.rate[i].mark%> <%= r.rate[i].name%></li>
         <%}%>
+        </ol>
         <a href='/index'><button>HOME</button></a>
         <a href='/changeinfo?id=<%= r._id%>'><button>Edit</button></a>
         <a href='/rate?id=<%= r._id%>&name=<%= r.name%>'><button>Rate</button></a>

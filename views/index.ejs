@@ -5,6 +5,11 @@
     <body>
     	Hello <%= u %><br>
 		Restaurant List<br>
+    Showing <%= r.length%> restaurant<br>
+    <form action='/search' method='get'>
+    <input type='text' name='keyword'><button type='submit'>search</button>
+  </form>
+  <br>
 		<a href='/add'><button>ADD</button></a><a href='/logout'><button>Logout</button></a><br>
 		<% r.forEach(function(restaurants) { %>
   		<li><a href=/showinfo?id=<%= restaurants._id %>><%= restaurants.name %></a></li>

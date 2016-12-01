@@ -1,19 +1,82 @@
 <html>
     <head> 
         <title>Restaurant List</title>
+		<link rel="stylesheet" href="/style/w3.css" type="text/css" />
+		<link rel="stylesheet" href="http://www.w3schools.com/lib/w3-theme-black.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     </head>
-    <body>
-    	Hello <%= u %><br>
-		Restaurant List<br>
-    Showing <%= r.length%> restaurant<br>
-    <form action='/search' method='get'>
-    <input type='text' name='keyword'><button type='submit'>search</button>
-  </form>
-  <br>
-		<a href='/add'><button>ADD</button></a><a href='/logout'><button>Logout</button></a><br>
-		<% r.forEach(function(restaurants) { %>
-  		<li><a href=/showinfo?id=<%= restaurants._id %>><%= restaurants.name %></a></li>
-  		<% });                        %>
-		<ol>
+    <body>	
+		<!-- Navbar -->
+		<div class="w3-top">
+			<ul class="w3-navbar w3-theme-d2 w3-left-align">
+				<li class="w3-hide-medium w3-hide-large w3-opennav w3-right">
+					<a class="w3-hover-white w3-theme-d2" href="javascript:void(0);" onclick="openNav()"><i class="fa fa-bars"></i></a>
+				</li>
+				<li><a href="#" class="w3-teal"><i class="fa fa-home w3-margin-right"></i>Hello <%= u %></a></li>
+				<li class="w3-hide-small"><a href="/add" class="w3-hover-white">ADD</a></li>
+				<li class="w3-hide-small"><a href="/logout" class="w3-hover-white">Logout</a></li>
+				<li class="w3-hide-small w3-dropdown-hover">
+					<a href="javascript:void(0);" class="w3-hover-teal" title="Search">
+						<i class="fa fa-search"></i>
+					</a>
+					<div class="w3-dropdown-content w3-white w3-card-4">
+						<form action='/search' method='get'>
+							<input type='text' name='keyword'>
+							<button type='submit'>Search</button>
+						</form>
+					</div>
+				</li>
+			</ul>
+
+			<!-- Navbar on small screens -->
+			<div id="navDemo" class="w3-hide w3-hide-large w3-hide-medium">
+				<ul class="w3-navbar w3-left-align w3-theme">
+					<li><a href="/add">ADD</a></li>
+					<li><a href="/logout">Logout</a></li>
+					<li class="w3-dropdown-hover">
+						<a href="javascript:void(0);" title="Search">Search <i class="fa fa-caret-down"></i></a>     
+						<div class="w3-dropdown-content w3-light-grey w3-card-4">
+							<form action='/search' method='get'>
+								<input type='text' name='keyword'>
+								<button type='submit'>Search</button>
+							</form>
+						</div>
+					</li>
+				</ul>
+			</div>
+		</div>
+		
+		<div class="w3-container w3-teal">
+			<p>　　</p>
+			<h1>Restaurant List</h1>
+			<P>Showing <%= r.length%> restaurant</p>
+		</div>
+
+		
+		<div class="w3-row-padding w3-margin-top">
+			<% r.forEach(function(restaurants) { %>
+			<div class="w3-third">
+				<div class="w3-card-2">
+					<img src="data:<%= restaurants.mimetype %>;base64,<%= restaurants.data %>" style="width:100%;height:25%">
+					<div class="w3-container">
+						<a href=/showinfo?id=<%= restaurants._id %>>
+							<h4><%= restaurants.name %></h4>
+						</a>
+					</div>
+				</div>
+			</div>
+			<% });                        %>
+		</div>
+		
+		<script>
+			function openNav() {
+				var x = document.getElementById("navDemo");
+				if (x.className.indexOf("w3-show") == -1) {
+					x.className += " w3-show";
+				} else { 
+					x.className = x.className.replace(" w3-show", "");
+				}
+			}
+		</script>
     </body>
 </html>

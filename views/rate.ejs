@@ -1,20 +1,30 @@
 <html>
-   <head> 
-        <title><%= name%></title>
-   </head>
-   <script>
-   function checkform(){
-   	var rate = document.forms['rateform']['rate'].value;
-   	if(rate < 1 || rate > 10){
-   		alert("Rate must between 1 to 10");
-   		return false;
-   	}
-   }
-   </script>
-   <form id='rateform' action='/ratemark' method='get' onsubmit="return checkform()">
-   Rate(1-10): <br>
-   <input type="hidden" name='id' value=<%= id%>>
-   <input type="int" name='rate' > 
-   <button value='submit'>Submit</button>
-	</form>
+	<head> 
+        <title><%= name %></title>
+		<link rel="stylesheet" href="/style/w3.css" type="text/css" />
+	</head>
+	<body>
+		<script>
+		   function checkform(){
+			var rate = document.forms['rateform']['rate'].value;
+			if(rate < 1 || rate > 10){
+				alert("Rate must between 1 to 10");
+				return false;
+			}
+		   }
+		</script>
+		<div class="w3-container w3-teal">
+			<h1>Rate <%= name %></h1>
+		</div>
+		<div class="w3-col">
+			<form class="w3-container w3-card-4 w3-padding-16 w3-white" id='rateform' action='/ratemark' method='get' onsubmit="return checkform()">
+				<div class="w3-group">
+					<label class="w3-label">Rate(1-10)</label>
+					<input class="w3-input" type="hidden" name='id' value=<%= id%>>
+					<input class="w3-input" type="int" name='rate' > 
+				</div>
+				<button value='submit' class="w3-btn w3-right w3-theme">Submit</button>
+			</form>
+		</div>
+   </body>
 </html>

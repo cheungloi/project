@@ -1,33 +1,101 @@
 <html>
     <head> 
         <title>Restaurant information</title>
-    </head>
+		<link rel="stylesheet" href="/style/w3.css" type="text/css" />
+		<link rel="stylesheet" href="http://www.w3schools.com/lib/w3-theme-black.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	</head>
     <body>
-    	Restaurant information<br>
-    	Name: <%= r.name%><br>
-    	<img src="data:<%=r.mimetype%>;base64,<%=r.data%>" border="1"><br>
-    	Borough: <%= r.borough%><br>
-    	Cuisine: <%= r.cuisine%><br>
-    	Street: <%= r.address.street%><br>
-    	Building: <%= r.address.building%><br>
-    	Zipcode: <%= r.address.zipcode%><br>
+		<!-- Navbar -->
+		<div class="w3-top">
+			<ul class="w3-navbar w3-theme-d2 w3-left-align">
+				<li class="w3-hide-medium w3-hide-large w3-opennav w3-right">
+					<a class="w3-hover-white w3-theme-d2" href="javascript:void(0);" onclick="openNav()"><i class="fa fa-bars"></i></a>
+				</li>
+				<li><a href="/index" class="w3-teal"><i class="fa fa-home w3-margin-right"></i>Home</a></li>
+				<li class="w3-hide-small"><a href="/changeinfo?id=<%= r._id%>&&owner=<%= r.owner%>" class="w3-hover-white">Edit</a></li>
+				<li class="w3-hide-small"><a href="/rate?id=<%= r._id%>&name=<%= r.name%>" class="w3-hover-white">Rate</a></li>
+				<li class="w3-hide-small"><a href="/delete?id=<%= r._id%>&owner=<%= r.owner%>" class="w3-hover-white">Delete</a></li>
+				<li class="w3-hide-small w3-dropdown-hover">
+					<a href="javascript:void(0);" class="w3-hover-teal" title="Search">
+						<i class="fa fa-search"></i>
+					</a>
+					<div class="w3-dropdown-content w3-white w3-card-4">
+						<form action='/search' method='get'>
+							<input type='text' name='keyword'>
+							<button type='submit'>Search</button>
+						</form>
+					</div>
+				</li>
+			</ul>
 
-    	<a href="/showmap?name=<%= r.name%>&lat=<%=r.address.gps[0]%>&lon=<%= r.address.gps[1] %>">
-    		GPS:</a> <%= r.address.gps[0] %>, <%= r.address.gps[1] %>
-    	
-        <br>
-    	Create by: <%= r.owner%><br>
-        Rate:<br>  
-        <ol>
-        <% for(var i=0; i<r.rate.length; i++){%>
-        <li><%= r.rate[i].mark%> <%= r.rate[i].name%></li>
-        <%}%>
-        </ol>
-        <a href='/index'><button>HOME</button></a>
-        <a href='/changeinfo?id=<%= r._id%>'><button>Edit</button></a>
-        <a href='/rate?id=<%= r._id%>&name=<%= r.name%>'><button>Rate</button></a>
-        <a href='/delete?id=<%= r._id%>&owner=<%= r.owner%>'><button>Del</button></a>
+			<!-- Navbar on small screens -->
+			<div id="navDemo" class="w3-hide w3-hide-large w3-hide-medium">
+				<ul class="w3-navbar w3-left-align w3-theme">
+					<li><a href="/index">Home</a></li>
+					<li><a href="/changeinfo?id=<%= r._id%>">Edit</a></li>
+					<li><a href="/rate?id=<%= r._id%>&name=<%= r.name%>">Rate</a></li>
+					<li><a href="/delete?id=<%= r._id%>&owner=<%= r.owner%>">Delete</a></li>
+					<li class="w3-dropdown-hover">
+						<a href="javascript:void(0);" title="Search">Search <i class="fa fa-caret-down"></i></a>
+						<div class="w3-dropdown-content w3-light-grey w3-card-4">
+							<form action='/search' method='get'>
+								<input type='text' name='keyword'>
+								<button type='submit'>Search</button>
+							</form>
+						</div>
+					</li>
+				</ul>
+			</div>
+		</div>
+		
+		<!-- Blog entry -->
+		<div class="w3-card-4 w3-margin w3-white">
+			<img src="data:<%=r.mimetype%>;base64,<%=r.data%>" alt="Restaurant Pict" style="width:100%;max-height:600px;">
+			<div class="w3-container w3-padding-8">
+			  <h3><b><%= r.name%></b></h3>
+			  <h5><span class="w3-opacity">Create by: <%= r.owner%></span></h5>
+			</div>
 
-
+			<div class="w3-container">
+			  <h2>Name: </h2> <%= r.name%><br>
+				<h2>Borough: </h2> <%= r.borough%><br>
+				<h2>Cuisine: </h2> <%= r.cuisine%><br>
+				<h2>Street: </h2> <%= r.address.street%><br>
+				<h2>Building: </h2> <%= r.address.building%><br>
+				<h2>Zipcode: </h2> <%= r.address.zipcode%><br>
+			  <div class="w3-row">
+				<div class="w3-col m8 s12">
+				  <p><a href="/showmap?name=<%= r.name%>&lat=<%=r.address.gps[0]%>&lon=<%= r.address.gps[1] %>"><button class="w3-btn w3-padding-large w3-white w3-border w3-hover-border-black"><b>SEE MAP &raquo;</b></button></a></p>
+				</div>
+				
+				<div class="w3-col m4 w3-dropdown-hover">
+					<p><a href="javascript:void(0);" class="w3-hover-teal" title="Rate">
+						<button class="w3-btn w3-padding-large w3-white w3-border w3-hover-border-black w3-right"><b>SEE RATE</b></button>
+					</a></p>
+					<div class="w3-dropdown-content w3-white w3-card-4">
+						<ol>
+							<% for(var i=0; i<r.rate.length; i++){%>
+							<li><%= r.rate[i].name%>: <%= r.rate[i].mark%></li>
+							<%}%>
+						</ol>
+					</div>
+				</div>
+			  </div>
+			</div>
+		</div>
+		<hr>
+		
+		<script>
+			function openNav() {
+				var x = document.getElementById("navDemo");
+				if (x.className.indexOf("w3-show") == -1) {
+					x.className += " w3-show";
+				} else { 
+					x.className = x.className.replace(" w3-show", "");
+				}
+			}
+		</script>
+		
     </body>
 </html>

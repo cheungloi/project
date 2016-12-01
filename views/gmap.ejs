@@ -1,7 +1,7 @@
 <html>
     <head> 
         <title><%= name %></title>
-		<link rel="stylesheet" type="text/css" href="layout.css">
+		<link rel="stylesheet" href="/style/w3.css" type="text/css" />
         <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true&key=AIzaSyAig4gbOhqVl-HXa-4v0DlQrfMXZn5YslA"></script>
         <script type="text/javascript">
             var loadMap = function() 
@@ -20,9 +20,9 @@
         </script>
     </head>
     <body>
-	 	<header><h1><%= name %></h1></header>
-			<aside>
-        	<div id="map" style="width:500px;height:500px;">
-			</aside>
+		<div class="w3-container w3-teal">
+			<h1><%= name %></h1>
+		</div>
+		<div id="map" style="width:100%;height:420px;"></div>
     </body>
 </html>

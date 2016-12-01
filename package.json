@@ -9,6 +9,7 @@
       "express-fileupload": "latest",
       "ejs": "*",
 		  "body-parser": "*",
+      "watson-developer-cloud": "latest",
 		  "cookie-session": "*"
     },
     "engine": "node >= 0.10.0",

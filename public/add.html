@@ -1,15 +1,54 @@
 <html>
-Add Restaurant
-<form action='/addrestaurant' method='post' encType='multipart/form-data'>
-	Name: <input type='text' name='rname'><br>
-	Borough: <input type='text' name='borough'><br>
-	Cuisine: <input type='text' name='cuisine'><br>
-	Street: <input type='text' name='street'><br>
-	Building: <input type='text' name='building'><br>
-	Zipcode: <input type='text' name='zipcode'><br>
-	GPS: lat<input type='text' name='lat'> lon<input type='text' name='lon'> <br>
-	Photo: <input type='file' name='rphoto'><br>
-	<input type='submit' value='ADD' />
- </form>	
-<a href=/index><button>back</button></a>
+<head>
+	<link rel="stylesheet" href="/style/w3.css" type="text/css" />
+</head>
+<body>
+	<div class="w3-container w3-teal">
+		<h1>Add Restaurant</h1>
+	</div>
+	<div class="w3-col">
+		<form class="w3-container w3-card-4 w3-padding-16 w3-white" action='/addrestaurant' method='post' encType='multipart/form-data'>
+			<div class="w3-group">      
+				<label class="w3-label">Name</label>
+				<input class="w3-input" type="text" name="rname" required>
+			</div>
+			<div class="w3-group">      
+				<label class="w3-label">Borough</label>
+				<input class="w3-input" type="text" name="borough" required>
+			</div>
+			<div class="w3-group">      
+				<label class="w3-label">Cuisine</label>
+				<input class="w3-input" type="text" name="cuisine" required>
+			</div>
+			<div class="w3-group">      
+				<label class="w3-label">Street</label>
+				<input class="w3-input" type="text" name="street" required>
+			</div>
+			<div class="w3-group">      
+				<label class="w3-label">Building</label>
+				<input class="w3-input" type="text" name="building" required>
+			</div>
+			<div class="w3-group">      
+				<label class="w3-label">Zipcode</label>
+				<input class="w3-input" type="text" name="zipcode">
+			</div>
+			<div class="w3-group">      
+				<label class="w3-label">GPS Lat</label>
+				<input class="w3-input" type="text" name="lat" required>
+				<label class="w3-label">GPS Lon</label>
+				<input class="w3-input" type="text" name="lon" required>
+			</div>
+			<div class="w3-group">      
+				<label class="w3-label">Photo</label>
+				<input class="w3-input" type="file" name="rphoto">
+			</div>
+			<input type='submit'  class="w3-btn w3-right w3-theme" value='Add restaurant' />
+		</form>	
+		<div class="w3-theme-l5 w3-center">
+          <a href=/index><button class="w3-btn w3-teal w3-padding-large">Back</button></a>
+        </div>
+	</div>
+</body>
+
+
 </html>

@@ -8,6 +8,12 @@ var assert = require('assert');
 var ObjectId = require('mongodb').ObjectID;
 var mongourl = 'mongodb://loicheung:19940319@ds043694.mlab.com:43694/s381f';
 var app = express();
+var watson = require('watson-developer-cloud');
+var visual_recognition = watson.visual_recognition({
+  api_key: '48aec928ba8beef4f317e367995107b269704976',
+  version: 'v3',
+  version_date: '2016-05-20'
+});
 
 
 var SECRETKEY1 = 'loi';
@@ -23,13 +29,99 @@ app.use(bodyParser.json());
 app.use(express.static(__dirname + '/public'));
 app.use(fileUpload());
 
+app.use('/style', express.static('style'));
+
+app.post('/api/create', function(req, res){
+	var reresult = {};
+	console.log('/api/create');
+	
+	if(!req.body.name || !req.files || !req.files.rphoto.mimetype.match('image')){
+		reresult['status'] = 'fail';
+		res.status(500);
+		res.send(reresult);
+		res.end();
+		return;
+	}
+	var r = {};
+	r['name'] = req.body.rname;
+	r['borough'] = req.body.borough;
+	r['cuisine'] = req.body.cuisine;
+	r['address'] = {};
+	r.address.street = req.body.street;
+	r.address.building = req.body.building;
+	r.address.zipcode = req.body.zipcode;
+	r.address['gps'] = [];
+	r.address.gps.push(req.body.lat);
+	r.address.gps.push(req.body.lon);
+	r['owner'] = req.session.username;
+	r['rate'] = [];
+	r['data'] = new Buffer(req.files.rphoto.data).toString('base64');
+	r['mimetype'] = req.files.rphoto.mimetype;
+	console.log(r);
+    MongoClient.connect(mongourl,function(err,db) {
+      console.log('Connected to mlab.com');
+      assert.equal(null,err);
+    	createrestaurant(db, r, function(result){
+    		db.close();
+    		console.log('close connection');
+    		if (result.insertedId != null) {
+            reresult['status'] = 'ok';
+            reresult['_id'] = result.insertedId;
+            console.log(reresult);
+            res.status(200);
+            res.send(reresult);
+            res.end();
+          } else {
+            reresult['status'] = fail;
+			res.status(500);
+			res.send(reresult);
+			res.end();
+          }
+    	});
+	});
+});
+app.get('/api/read', function(req,res){
+	MongoClient.connect(mongourl, function(err, db){
+		assert.equal(err, null);
+		console.log('connecting to restaurants');
+		var criteria = null;
+		listrestaurant(db, criteria, function(restaurants){
+			db.close();
+			res.send(restaurants);
+			res.end();
+		});
+	});
+});
+app.get('/api/read/:criteria1/:criteria2', function(req,res){
+	var criteria = {};
+	criteria[req.params.criteria1] = req.params.criteria2;
+	console.log(criteria);
+	MongoClient.connect(mongourl, criteria, function(err, db){
+		assert.equal(err, null);
+		console.log('connecting to restaurants');
+		listrestaurant(db, criteria, function(restaurants){
+			db.close();
+			res.send(restaurants);
+			res.end();
+		});
+	});
+});
 app.get('/',function(req,res) {
 	console.log(req.session);
 	if (!req.session.authenticated) {
 		res.redirect('/login');
+	}else{
+		MongoClient.connect(mongourl, function(err, db){
+			assert.equal(err, null);
+			console.log('connecting to restaurants');
+			var criteria = null;
+			listrestaurant(db, criteria, function(restaurants){
+				db.close();
+				res.render('index',{r:restaurants, u:req.session.username});
+				//res.end();
+			});
+		});
 	}
-	res.status(200).end('Hello, ' + req.session.username +
-	  '!  This is a secret page!');
 });
 
 app.get('/add',function(req,res) {
@@ -56,7 +148,6 @@ app.get('/showinfo',function(req,res) {
 			db.close();
 			console.log(restaurants);
 			res.render('info',{r:restaurants});
-			//res.end();
 		});
 	});
 });
@@ -72,28 +163,27 @@ app.get('/index',function(req,res) {
 			listrestaurant(db, criteria, function(restaurants){
 				db.close();
 				res.render('index',{r:restaurants, u:req.session.username});
-				//res.end();
 			});
 		});
 	}
 });
 app.get('/search', function(req,res){
-	var criteria = req.query.keyword;	
+	var criteria = {$or:[{name:new RegExp(req.query.keyword, 'i')},{borough:new RegExp(req.query.keyword, 'i')},{cuisine:new RegExp(req.query.keyword, 'i')}]};
 	MongoClient.connect(mongourl, criteria, function(err, db){
 		assert.equal(err, null);
 		console.log('connecting to restaurants');
 		listrestaurant(db, criteria, function(restaurants){
 			db.close();
 			res.render('index',{r:restaurants, u:req.session.username});
-		//req.end();
 		});
 	});
 });
 
 app.get('/delete', function(req,res){
 	if(req.query.owner !== req.session.username){
-        res.send('You are not owner.');
-        return;
+        var error = 'You are not owner.';
+		res.render('error',{error:error});
+        
     }
     var criteria = {"_id":ObjectId(req.query.id)};
     MongoClient.connect(mongourl, function(err, db){
@@ -106,19 +196,17 @@ app.get('/delete', function(req,res){
 });
 
 app.get('/changeinfo', function(req, res){
+	if(req.query.owner !== req.session.username){
+		var error = "You are not authorized to edit!!!";
+		res.render('error',{error:error});
+		return;
+	}
 	MongoClient.connect(mongourl, function(err, db){
 		assert.equal(err, null);
 		var criteria = {"_id":ObjectId(req.query.id)};
 		findrestaurant(db, criteria, function(restaurants){
 			db.close();
-			console.log(restaurants);
-			if(restaurants.owner !== req.session.username){
-				var error = "You are not authorized to edit!!!";
-				res.render('error',{error:error});
-				//res.send('You are not authorized to edit!!!');	
-			}else{
-				res.render('editinfo',{r:restaurants});
-			}	
+			res.render('editinfo',{r:restaurants});
 		});
 	});
 });
@@ -141,7 +229,7 @@ app.get('/ratemark', function(req,res){
       assert.equal(null,err);
       checkrate(db, criteria1, req.session.username, function(result){
       	db.close();
-      	if(result == 'a'){
+      	if(result){
       		MongoClient.connect(mongourl,function(err,db) {
       		console.log('Connected to mlab.com');
       		assert.equal(null,err);
@@ -160,24 +248,48 @@ app.get('/ratemark', function(req,res){
 
 app.post('/addrestaurant', function(req, res){
 	var rphoto;
-	if(req.body.rname == null){
-        res.send('name cannot be empty.');
+	console.log('/create');
+	if(!req.body.rname){
+        var error = "name cannot be empty.";
+		res.render('error',{error:error});
         return;
     }
 	if(!req.files){
-        res.send('No photo were uploaded.');
+        var error = "No photo were uploaded.";
+		res.render('error',{error:error});
         return;
-    }    	
-   // console.log(req.files);
+    }    
+
+    if(!req.files.rphoto.mimetype.match('image')){
+    	var error = "Files is not image type.";
+		res.render('error',{error:error});
+        return;
+    }
+   	var r = {};
+	r['name'] = req.body.rname;
+	r['borough'] = req.body.borough;
+	r['cuisine'] = req.body.cuisine;
+	r['address'] = {};
+	r.address.street = req.body.street;
+	r.address.building = req.body.building;
+	r.address.zipcode = req.body.zipcode;
+	r.address['gps'] = [];
+	r.address.gps.push(req.body.lat);
+	r.address.gps.push(req.body.lon);
+	r['owner'] = req.session.username;
+	r['rate'] = [];
+	r['data'] = new Buffer(req.files.rphoto.data).toString('base64');
+	r['mimetype'] = req.files.rphoto.mimetype;
+	console.log(r);
     MongoClient.connect(mongourl,function(err,db) {
       console.log('Connected to mlab.com');
       assert.equal(null,err);
-    	createrestaurant(db, req.files.rphoto, req.body, req.session.username, function(result){
+    	createrestaurant(db, r, function(result){
     		db.close();
     		console.log('close connection');
     		if (result.insertedId != null) {
             res.status(200);
-            res.end('Inserted: ' + result.insertedId);
+            redirect('/index');
           } else {
             res.status(500);
             res.end(JSON.stringify(result));
@@ -186,7 +298,6 @@ app.post('/addrestaurant', function(req, res){
 	});
 });
 app.post('/changeinfo', function(req,res){
-	//console.log(req.files.rphoto.name);
 	var criteria1 = {"_id":ObjectId(req.body.id)};
 	var criteria2 = {};
 	criteria2['name'] = req.body.name;
@@ -200,11 +311,16 @@ app.post('/changeinfo', function(req,res){
 	criteria2.address.gps.push(req.body.lat);
 	criteria2.address.gps.push(req.body.lon);
 	if(req.files.rphoto.name){
+		if(!req.files.rphoto.mimetype.match('image')){
+    	var error = "Files is not image type.";
+		res.render('error',{error:error});
+        return;
+    }
 		criteria2['data'] = new Buffer(req.files.rphoto.data).toString('base64');
 		criteria2['mimetype'] = req.files.rphoto.mimetype;	
 	}
+	console.log(criteria2);
 	var criteria3 = {$set:criteria2};
-	//console.log(criteria3);
 	MongoClient.connect(mongourl,function(err,db) {
       console.log('Connected to mlab.com');
       assert.equal(null,err);
@@ -216,7 +332,7 @@ app.post('/changeinfo', function(req,res){
 });
 
 app.post('/login',function(req,res) {
-	if(req.body.id == null || req.body.pw == null){
+	if(!req.body.id || !req.body.pw){
 		res.send('cannot empty');
 		return;
 	}
@@ -240,20 +356,18 @@ app.post('/login',function(req,res) {
 });
 
 app.post('/create', function(req,res){
-	if(req.body.id == null || req.body.pw == null){
+	if(!req.body.id || !req.body.pw){
 		res.send('cannot empty');
 		return;
 	}
-	console.log(req.body.id);
 	MongoClient.connect(mongourl, function(err,db){
 		console.log('connecting to userdb');
 		assert.equal(null,err);
 		createac(db, req.body.id, req.body.pw, function(result){
 			db.close();
-        if (result.insertedId != null) {
+        if (!result.insertedId) {
           res.status(200);
           res.send('create success');
-          //res.redirect('/login');
         } else {
           res.status(500);
           res.end(JSON.stringify(result));
@@ -274,8 +388,8 @@ function listrestaurant(db, criteria, callback){
 			callback(result);
 	});
 	}else{
-		var keyword = '\.*'+criteria+'\.*';
-		db.collection('restaurants').find({name:new RegExp(keyword, 'i')}).toArray(function(err, result){
+		console.log(criteria)
+		db.collection('restaurants').find(criteria).toArray(function(err, result){
 			assert.equal(err,null);
 			callback(result);
 	});
@@ -294,7 +408,7 @@ function login(db, id, pw, callback){
 	var result = false;
 	db.collection('user').findOne({'username':id}, function(err,doc){
 		assert.equal(err,null);
-		if(doc != null){
+		if(doc!=null){
 			if(doc.password == pw){
 				result = true;			
 			}
@@ -308,7 +422,7 @@ function createac(db, id, pw, callback){
 	var pw = pw;
 	db.collection('user').findOne({'username':id}, function(err,doc) {
 		assert.equal(err, null);
-		if(doc !== null){
+		if(doc!=null){
 			callback('id is used');
 		}else{
 			db.collection('user').insertOne(
@@ -326,8 +440,6 @@ function createac(db, id, pw, callback){
 	});
 }
 function updaterestaurant(db, criteria1, criteria2, callback){
-	console.log(criteria1);
-	console.log(criteria2);
 	db.collection('restaurants').updateOne(criteria1, criteria2, function(err,result){
 		if (err) {
       			result = err;
@@ -335,26 +447,11 @@ function updaterestaurant(db, criteria1, criteria2, callback){
     		} else {
       			console.log("update success");
     		}
+
     		callback(result);
 	});
 }
-function createrestaurant(db, bfile, body, owner, callback){
-	var r = {};
-	r['name'] = body.rname;
-	r['borough'] = body.borough;
-	r['cuisine'] = body.cuisine;
-	r['address'] = {};
-	r.address.street = body.street;
-	r.address.building = body.building;
-	r.address.zipcode = body.zipcode;
-	r.address['gps'] = [];
-	r.address.gps.push(body.lat);
-	r.address.gps.push(body.lon);
-	r['owner'] = owner;
-	r['rate'] = [];
-	r['data'] = new Buffer(bfile.data).toString('base64');
-	r['mimetype'] = bfile.mimetype;
-	console.log(r);
+function createrestaurant(db, r, callback){
 	db.collection('restaurants').insertOne(r, function(err,result) {
     		if (err) {
       			result = err;
@@ -367,23 +464,18 @@ function createrestaurant(db, bfile, body, owner, callback){
 }
 
 function checkrate(db, criteria, user, callback){
-	console.log(user);
-	var result = 'a';
-
+	var result = true;
 	db.collection('restaurants').findOne(criteria, function(err, doc){
 		assert.equal(err,null);
 		console.log(doc.rate);
-		if(doc.rate !== null){
+		if(doc.rate!=null){
 			console.log("rate is not null");
 			for(var i=0;i<doc.rate.length;i++){
 				if (doc.rate[i].name == user){
-				result = 'b';
-				//callback(result);
+				result = false;
 				}
 			}
-		}else{
-		console.log("rate is null");
-	}
+		}		
 		callback(result);
 	});
 }

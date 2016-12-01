@@ -1,0 +1,29 @@
+<html>
+<head>
+	<title>Restaurant</title>
+	<link rel="stylesheet" href="/style/w3.css" type="text/css" />
+</head>
+<body>
+
+<form action="http://localhost:8099/api/create" method="post">
+	<h2>Name of restaurant:</h2>
+	<input type="text" name="name"><br>
+
+	<h2>Address:</h2>
+	Building: <input type="text" name="building"><br>
+	Street: <input type="text" name="street"><br>
+	Zipcode: <input type="text" name="zipcode"><br>
+	<h3>Coordinates:</h3>
+	Longitude: <input type="text" name="lon"><br>
+	Latitude: <input type="text" name="lat"><br>
+
+	<h2>Other Info</h2>
+	Borough: <input type="text" name="borough"><br>
+	Cuisine: <input type="text" name="cuisine"><br>
+	Restaurant Id: <input type="text" name="restaurant_id"><br>
+	<br>
+	<input type="submit" value="Create">
+</form>
+
+</body>
+</html>

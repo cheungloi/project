@@ -33,17 +33,16 @@ app.use('/style', express.static('style'));
 
 app.post('/api/create', function(req, res){
 	var reresult = {};
-	console.log('/api/create');
-	
-	if(!req.body.name || !req.files || !req.files.rphoto.mimetype.match('image')){
+	var r = {};
+	console.log(req.body.name);
+	if(!req.body.name || !req.body.owner){
 		reresult['status'] = 'fail';
 		res.status(500);
 		res.send(reresult);
-		res.end();
-		return;
+		res.end();		
 	}
-	var r = {};
-	r['name'] = req.body.rname;
+	console.log("else part");
+	r['name'] = req.body.name;
 	r['borough'] = req.body.borough;
 	r['cuisine'] = req.body.cuisine;
 	r['address'] = {};
@@ -53,10 +52,12 @@ app.post('/api/create', function(req, res){
 	r.address['gps'] = [];
 	r.address.gps.push(req.body.lat);
 	r.address.gps.push(req.body.lon);
-	r['owner'] = req.session.username;
+	r['owner'] = req.body.owner;
 	r['rate'] = [];
+	if(req.files && req.files.rphoto.mimetype.match('image')){
 	r['data'] = new Buffer(req.files.rphoto.data).toString('base64');
 	r['mimetype'] = req.files.rphoto.mimetype;
+	}
 	console.log(r);
     MongoClient.connect(mongourl,function(err,db) {
       console.log('Connected to mlab.com');
@@ -64,16 +65,16 @@ app.post('/api/create', function(req, res){
     	createrestaurant(db, r, function(result){
     		db.close();
     		console.log('close connection');
-    		if (result.insertedId != null) {
+    		if (result.insertedId) {
             reresult['status'] = 'ok';
             reresult['_id'] = result.insertedId;
             console.log(reresult);
             res.status(200);
             res.send(reresult);
-            res.end();
+			res.end();
           } else {
-            reresult['status'] = fail;
-			res.status(500);
+            reresult['status'] = "fail";
+			res.writeHead(500);
 			res.send(reresult);
 			res.end();
           }
@@ -100,9 +101,14 @@ app.get('/api/read/:criteria1/:criteria2', function(req,res){
 		assert.equal(err, null);
 		console.log('connecting to restaurants');
 		listrestaurant(db, criteria, function(restaurants){
+			if(!restaurants){
 			db.close();
 			res.send(restaurants);
 			res.end();
+		}else{
+			res.send({});
+			res.end();
+		}
 		});
 	});
 });
@@ -190,7 +196,9 @@ app.get('/delete', function(req,res){
     	assert.equal(err,null);
     	delrestaurant(db, criteria, function(result){
     		db.close();
-    		res.redirect('/index');
+    		var message = "delete success!!!";
+          	var url = "index"
+          	res.render('message',{m:message, url:url});
     	});
     });
 });
@@ -249,24 +257,14 @@ app.get('/ratemark', function(req,res){
 app.post('/addrestaurant', function(req, res){
 	var rphoto;
 	console.log('/create');
-	if(!req.body.rname){
+	if(!req.body.name){
         var error = "name cannot be empty.";
 		res.render('error',{error:error});
         return;
     }
-	if(!req.files){
-        var error = "No photo were uploaded.";
-		res.render('error',{error:error});
-        return;
-    }    
-
-    if(!req.files.rphoto.mimetype.match('image')){
-    	var error = "Files is not image type.";
-		res.render('error',{error:error});
-        return;
-    }
+	    
    	var r = {};
-	r['name'] = req.body.rname;
+	r['name'] = req.body.name;
 	r['borough'] = req.body.borough;
 	r['cuisine'] = req.body.cuisine;
 	r['address'] = {};
@@ -278,8 +276,10 @@ app.post('/addrestaurant', function(req, res){
 	r.address.gps.push(req.body.lon);
 	r['owner'] = req.session.username;
 	r['rate'] = [];
-	r['data'] = new Buffer(req.files.rphoto.data).toString('base64');
-	r['mimetype'] = req.files.rphoto.mimetype;
+	if(req.files){
+		r['data'] = new Buffer(req.files.rphoto.data).toString('base64');
+		r['mimetype'] = req.files.rphoto.mimetype;	
+	}	
 	console.log(r);
     MongoClient.connect(mongourl,function(err,db) {
       console.log('Connected to mlab.com');
@@ -288,8 +288,9 @@ app.post('/addrestaurant', function(req, res){
     		db.close();
     		console.log('close connection');
     		if (result.insertedId != null) {
+    		console.log(result.insertedId);
             res.status(200);
-            redirect('/index');
+            res.redirect('/index');
           } else {
             res.status(500);
             res.end(JSON.stringify(result));
@@ -365,12 +366,15 @@ app.post('/create', function(req,res){
 		assert.equal(null,err);
 		createac(db, req.body.id, req.body.pw, function(result){
 			db.close();
-        if (!result.insertedId) {
+			console.log(result);
+        if (result) {
           res.status(200);
-          res.send('create success');
+          var message = "create success!!!";
+          var url = "login"
+          res.render('message',{m:message, url:url});
         } else {
-          res.status(500);
-          res.end(JSON.stringify(result));
+          var error = "id is used";
+          res.render('error',{error:error});
         }
       });
     });
@@ -423,7 +427,7 @@ function createac(db, id, pw, callback){
 	db.collection('user').findOne({'username':id}, function(err,doc) {
 		assert.equal(err, null);
 		if(doc!=null){
-			callback('id is used');
+			callback(false);
 		}else{
 			db.collection('user').insertOne(
 				{"username":id,
@@ -434,7 +438,7 @@ function createac(db, id, pw, callback){
     			} else {
       				console.log("Inserted _id = " + result.insertId);
     			}
-    			callback(result);
+    			callback(true);
 			});
 		}
 	});
